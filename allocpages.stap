@@ -1,0 +1,24 @@
+#!/usr/bin/stap
+
+%{
+#include <linux/printk.h>
+#include <linux/types.h>
+%}
+
+function sprintf_gfp_masks:string (gfp_mask:long) %{
+    gfp_t mask = (gfp_t) STAP_ARG_gfp_mask;
+    snprintf(STAP_RETVALUE, MAXSTRINGLEN, "gfp_mask=%#x(%pGg) for comm(%s)", mask, &mask, current->comm);
+%}
+
+probe begin {
+    printf("Traces alloc pages calls\n");
+}
+
+probe kernel.function("__alloc_pages_nodemask").call {
+    // print_backtrace();
+    // print_regs();
+    // print_ubacktrace();
+    if (execname() == "ls")
+        printf("__alloc_pages_nodemask called with flags: %s\n", sprintf_gfp_masks($gfp_mask));
+    // print($$vars);
+}
