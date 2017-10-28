@@ -1,0 +1,33 @@
+#!/usr/bin/stap
+
+global new;
+
+function isnewpid(pid) {
+    foreach (newpid in new) {
+        if (newpid == pid) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+probe begin {
+    printf("Snoop tty writes\n");
+}
+
+probe tty.init {
+    time = gettimeofday_s();
+    printf("[%s] tty opened by pid: %d(%s)\n", ctime(time), pid(), execname());
+    new[pid()] = execname();
+}
+
+probe tty.write {
+    if (isnewpid(pid()) == 1) {
+        char = kernel_string_n($buf,$nr);
+        if (char == "\r" || char == "\n")
+            printf("\n");
+        else
+            printf("%s", char);
+    }
+}
