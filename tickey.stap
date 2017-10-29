@@ -1,0 +1,21 @@
+#!/usr/bin/stap
+
+probe begin {
+    printf("Kdb events\n");
+}
+
+probe kernel.function("evdev_events").call {
+   for (i = 0; i < $count; i++) {
+       code = $vals[i]->code;
+       if ($vals[i]->value == 1 && $vals[i]->type == 1 && code < 60) {
+           if (code == 29 || code == 56 || code == 42 || code == 54 || code == 97 || code == 100) {
+                printf("(skipping) code=%d type=%d value=%d\n", $vals[i]->code, $vals[i]->type, $vals[i]->value);
+            } else {
+                printf("code=%d type=%d value=%d\n", $vals[i]->code, $vals[i]->type, $vals[i]->value);
+                system("/usr/bin/ogg123 -q -d alsa /home/dbosschieter/code/stap-lessons/KeypressStandard.ogg 2> /dev/null");
+            }
+        }
+    }
+}
+
+// system("mpg123 /home/dbosschieter/code/stap-lessons/click.mp3 2> /dev/null > /dev/null");

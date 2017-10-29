@@ -1,0 +1,68 @@
+#!/usr/bin/stap
+
+probe begin {
+    printf("Show scheduler actions + scheduler class\n");
+}
+
+probe kernel.function("enqueue_entity").call {
+    printf("<- adding to cfs_rb se->vruntime:%d\n", $se->vruntime);
+}
+probe kernel.function("dequeue_entity").call {
+    printf("-> remove from cfs_rb\n");
+}
+
+probe kernel.function("pick_next_task_fair").return {
+    printf("[fair] chose next task: ");
+    task=$return;
+    if (task) {
+        pid=$return->pid;
+        comm=$return->comm;
+        printf("next task pid: %d(%s)\n", pid, kernel_string(comm));
+    } else {
+        printf("idle\n");
+    }
+}
+
+probe kernel.function("pick_next_task_dl").return {
+    printf("[dl] chose next task: ");
+    task=$return;
+    if (task) {
+        pid=$return->pid;
+        comm=$return->comm;
+        printf("next task pid: %d(%s)\n", pid, kernel_string(comm));
+    } else {
+        printf("idle\n");
+    }
+}
+
+probe kernel.function("pick_next_task_rt").return {
+    printf("[rt] chose next task: ");
+    task=$return;
+    if (task) {
+        pid=$return->pid;
+        comm=$return->comm;
+        printf("next task pid: %d(%s)\n", pid, kernel_string(comm));
+    } else {
+        printf("idle\n");
+    }
+}
+
+probe kernel.function("scheduler_tick").call {
+    printf("-----tick-----\n");
+}
+
+//probe kernel.function("context_switch").call {
+//    printf("%s pid:%d\n", __FUNCION__, pid());
+//}
+
+// probe kernel.function("switch_mm").call {
+//     if ($next->owner) {
+//         printf("*next(%#p): %d(%s)\n", $next, $next->owner->pid, kernel_string($next->owner->comm));
+//     } else {
+//         printf("this should not happen?\n");
+//     }
+// }
+
+//probe kernel.function("switch_to").call {
+//    printf("%s pid:%d\n", __FUNCION__, pid());
+//}
